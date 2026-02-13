@@ -22,7 +22,6 @@
 /* ────────────────────────────────────────
    CONSTANTS
 ──────────────────────────────────────── */
-#define PORT (getenv("PORT") ? atoi(getenv("PORT")) : 8080)
 #define BACKLOG      10
 #define BUF_SIZE     8192
 #define MAX_ITER     200
@@ -313,7 +312,9 @@ static void handle_solve(int fd, const char *body) {
 /* ────────────────────────────────────────
    MAIN
 ──────────────────────────────────────── */
-int main(void) {
+int main(void) {int main(void) {
+    char *port_env = getenv("PORT");
+    int PORT = port_env ? atoi(port_env) : 8080;
     int sfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sfd < 0) { perror("socket"); return 1; }
     int opt = 1;
