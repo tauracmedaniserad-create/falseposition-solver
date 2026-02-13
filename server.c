@@ -315,6 +315,7 @@ static void handle_solve(int fd, const char *body) {
 int main(void) {
     char *port_env = getenv("PORT");
     int PORT = port_env ? atoi(port_env) : 8080;
+fprintf(stderr, "==> DEBUG: PORT from env='%s', using PORT=%d\n", port_env ? port_env : "NULL", PORT);
     int sfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sfd < 0) { perror("socket"); return 1; }
     int opt = 1;
@@ -327,7 +328,9 @@ int main(void) {
     addr.sin_port        = htons(PORT);
 
     if (bind(sfd,(struct sockaddr*)&addr,sizeof(addr))<0){perror("bind");return 1;}
+fprintf(stderr, "==> DEBUG: Successfully bound to 0.0.0.0:%d\n", PORT);
     if (listen(sfd,BACKLOG)<0){perror("listen");return 1;}
+fprintf(stderr, "==> DEBUG: Now listening for connections\n");
 
     printf("╔══════════════════════════════════════════╗\n");
     printf("║  False Position Method Server RUNNING    ║\n");
