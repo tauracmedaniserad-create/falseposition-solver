@@ -1,5 +1,2 @@
-build:
-gcc -o server server.c -lm
-
-run:
-./server
+	gcc -o server server.c -lm
+	./server
