@@ -278,8 +278,8 @@ static void handle_solve(int fd, const char *body) {
     char tmp[128];
     double ca = 0.0, cb = 0.0, cc = 0.0;
     get_param(body, "a",  tmp, sizeof(tmp)); ca  = atof(tmp);
-    get_param(body, "b",  tmp, sizeof(tmp)); double cb  = atof(tmp);
-    get_param(body, "c",  tmp, sizeof(tmp)); double cc  = atof(tmp);
+    get_param(body, "b",  tmp, sizeof(tmp)); cb  = atof(tmp);
+    get_param(body, "c",  tmp, sizeof(tmp)); cc  = atof(tmp);
     get_param(body, "xl",  tmp, sizeof(tmp)); double xl  = atof(tmp);
     get_param(body, "xu",  tmp, sizeof(tmp)); double xu  = atof(tmp);
     get_param(body, "tol", tmp, sizeof(tmp)); double tol = atof(tmp);
