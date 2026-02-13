@@ -283,11 +283,11 @@ static void handle_solve(int fd, const char *body) {
     get_param(body, "xu",  tmp, sizeof(tmp)); double xu  = atof(tmp);
     get_param(body, "tol", tmp, sizeof(tmp)); double tol = atof(tmp);
 
-    static FPRow rows[MAX_ITER];
+    FPRow rows[MAX_ITER];
     double root = 0.0;
     char   errmsg[256] = {0};
 
-    static char jbody[131072];
+    char jbody[131072];
 
     if (fabs(ca) < 1e-10) {
         snprintf(jbody, sizeof(jbody),
