@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>False Position Method — Quadratic Solver</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+/* ══════════════════════════════════════════
+   VARIABLES & RESET
+══════════════════════════════════════════ */
+:root{
+  --bg:      #080c14;
+  --panel:   #0e1622;
+  --card:    #111c2d;
+  --border:  #1a2d47;
+  --accent:  #f97316;   /* orange — distinct from bisection's cyan */
+  --accent2: #ea580c;
+  --blue:    #38bdf8;
+  --green:   #22c55e;
+  --red:     #f87171;
+  --yellow:  #fbbf24;
+  --purple:  #a78bfa;
+  --txt:     #e2e8f0;
+  --dim:     #64748b;
+  --radius:  14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;font-size:15px}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* ══════════════════════════════════════════
+   HEADER
+══════════════════════════════════════════ */
+header{
+  background:linear-gradient(135deg,#0d1825 0%,#080c14 100%);
+  border-bottom:1px solid var(--border);
+  padding:0;
+}
+.header-top{
+  display:flex;align-items:center;gap:16px;
+  padding:18px 36px 14px;
+}
+.logo{
+  width:46px;height:46px;border-radius:11px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:grid;place-items:center;
+  font-size:20px;font-weight:900;color:#fff;
+  box-shadow:0 0 22px rgba(249,115,22,.3);
+  flex-shrink:0;
+}
+.header-text h1{font-size:1.4rem;font-weight:800;letter-spacing:.3px}
+.header-text h1 span{color:var(--accent)}
+.header-text p{color:var(--dim);font-size:.8rem;margin-top:2px}
+
+/* SECTION NAV BAR */
+.section-nav{
+  display:flex;gap:0;padding:0 24px;
+  border-top:1px solid var(--border);overflow-x:auto;
+}
+.snav-btn{
+  padding:10px 20px;border:none;background:none;
+  color:var(--dim);font-size:.78rem;font-weight:600;
+  letter-spacing:.8px;text-transform:uppercase;cursor:pointer;
+  border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;
+}
+.snav-btn:hover{color:var(--txt)}
+.snav-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* ══════════════════════════════════════════
+   LAYOUT
+══════════════════════════════════════════ */
+main{max-width:1380px;margin:0 auto;padding:24px 20px;display:grid;gap:22px}
+
+/* ══════════════════════════════════════════
+   CARDS
+══════════════════════════════════════════ */
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:22px 24px;
+}
+.sec-label{
+  font-size:.68rem;font-weight:800;letter-spacing:2px;
+  text-transform:uppercase;color:var(--accent);
+  margin-bottom:4px;
+}
+.sec-title{
+  font-size:1.1rem;font-weight:700;margin-bottom:16px;
+  border-bottom:1px solid var(--border);padding-bottom:12px;
+}
+
+/* ══════════════════════════════════════════
+   INTRODUCTION SECTION
+══════════════════════════════════════════ */
+.intro-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:750px){.intro-grid{grid-template-columns:1fr}}
+.intro-box{
+  background:#0a1420;border:1px solid var(--border);
+  border-radius:10px;padding:16px 18px;
+}
+.intro-box h4{
+  font-size:.72rem;font-weight:700;letter-spacing:1.5px;
+  text-transform:uppercase;color:var(--blue);margin-bottom:10px;
+}
+.intro-box p{color:#94a3b8;line-height:1.7;font-size:.87rem}
+.intro-box ul{padding-left:18px;color:#94a3b8;font-size:.87rem;line-height:1.9}
+
+/* ══════════════════════════════════════════
+   FORMULA DISPLAY
+══════════════════════════════════════════ */
+.formula-wrap{
+  display:grid;grid-template-columns:1fr 1fr;gap:14px;
+  margin-bottom:0;
+}
+@media(max-width:750px){.formula-wrap{grid-template-columns:1fr}}
+.formula-block{
+  background:#060e1a;border:1px solid var(--border);
+  border-radius:10px;padding:16px 18px;
+}
+.formula-block h4{
+  font-size:.68rem;font-weight:700;letter-spacing:1.5px;
+  text-transform:uppercase;color:var(--dim);margin-bottom:10px;
+}
+.formula-text{
+  font-family:'Courier New',monospace;
+  font-size:1rem;color:var(--accent);
+  line-height:1.8;text-align:center;
+}
+.formula-text .sub{color:var(--blue);font-size:.85rem}
+.formula-text .eq{color:var(--green)}
+.formula-note{
+  font-size:.78rem;color:var(--dim);margin-top:8px;
+  line-height:1.6;
+}
+
+/* ══════════════════════════════════════════
+   INPUT GRID
+══════════════════════════════════════════ */
+.input-grid{display:grid;grid-template-columns:360px 1fr;gap:22px;align-items:start}
+@media(max-width:860px){.input-grid{grid-template-columns:1fr}}
+
+label{display:block;font-size:.78rem;color:var(--dim);margin-bottom:5px;font-weight:600}
+input[type=number],select{
+  width:100%;background:#060e1a;border:1px solid var(--border);
+  border-radius:8px;padding:9px 12px;color:var(--txt);
+  font-size:.9rem;outline:none;transition:border .2s,box-shadow .2s;
+}
+input[type=number]:focus,select:focus{
+  border-color:var(--accent);box-shadow:0 0 0 3px rgba(249,115,22,.12)
+}
+.frow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px}
+.frow2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.f1{margin-bottom:14px}
+
+/* live equation preview */
+.eq-preview{
+  background:#060e1a;border:1px solid var(--border);
+  border-radius:8px;padding:12px 14px;
+  font-family:'Courier New',monospace;font-size:1rem;
+  color:var(--accent);text-align:center;margin-bottom:16px;
+  min-height:42px;transition:all .3s;
+}
+
+.btn-solve{
+  width:100%;padding:13px;border:none;border-radius:9px;cursor:pointer;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#fff;font-size:.95rem;font-weight:800;letter-spacing:.6px;
+  transition:opacity .2s,transform .15s;
+  box-shadow:0 0 20px rgba(249,115,22,.25);
+}
+.btn-solve:hover{opacity:.87;transform:translateY(-1px)}
+.btn-solve:disabled{opacity:.35;cursor:not-allowed}
+
+.err-box{
+  display:none;background:rgba(248,113,113,.1);
+  border:1px solid rgba(248,113,113,.3);border-radius:8px;
+  padding:12px 14px;color:#fca5a5;font-size:.88rem;margin-bottom:12px;
+}
+
+/* ══════════════════════════════════════════
+   GRAPH
+══════════════════════════════════════════ */
+.chart-wrap{position:relative;height:320px;width:100%}
+
+/* ══════════════════════════════════════════
+   RESULTS — hidden until solved
+══════════════════════════════════════════ */
+#results{display:none}
+
+/* ══════════════════════════════════════════
+   SOLUTION OVERVIEW BADGES
+══════════════════════════════════════════ */
+.badge-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:22px}
+.badge{
+  background:#060e1a;border:1px solid var(--border);
+  border-radius:10px;padding:14px;text-align:center;
+}
+.badge .bv{font-size:1.45rem;font-weight:800;letter-spacing:-.5px}
+.badge .bl{font-size:.68rem;color:var(--dim);text-transform:uppercase;letter-spacing:1.2px;margin-top:4px}
+.oc  .bv{color:var(--accent)}
+.og  .bv{color:var(--green)}
+.ob  .bv{color:var(--blue)}
+.oy  .bv{color:var(--yellow)}
+.op  .bv{color:var(--purple)}
+
+/* ══════════════════════════════════════════
+   STEP-BY-STEP SOLUTION
+══════════════════════════════════════════ */
+.steps-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:720px){.steps-grid{grid-template-columns:1fr}}
+.step-card{
+  background:#060e1a;border:1px solid var(--border);
+  border-radius:10px;padding:16px;
+}
+.step-card .step-num{
+  display:inline-block;background:var(--accent);color:#fff;
+  font-size:.68rem;font-weight:800;padding:2px 8px;border-radius:20px;
+  margin-bottom:8px;letter-spacing:.8px;
+}
+.step-card h4{font-size:.8rem;font-weight:700;color:var(--txt);margin-bottom:10px}
+.step-body{
+  font-family:'Courier New',monospace;font-size:.84rem;
+  background:#030810;border-radius:7px;padding:12px;
+  line-height:1.75;white-space:pre-wrap;word-break:break-all;
+  color:#cbd5e1;
+}
+.hl  {color:var(--accent);font-weight:700}
+.hl2 {color:var(--green);font-weight:700}
+.hl3 {color:var(--blue);font-weight:700}
+.hl4 {color:var(--yellow);font-weight:700}
+
+/* ══════════════════════════════════════════
+   ITERATION TABLE
+══════════════════════════════════════════ */
+.tbl-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:.8rem}
+thead th{
+  background:#060e1a;padding:10px 12px;
+  color:var(--dim);font-weight:700;font-size:.68rem;
+  letter-spacing:1px;text-transform:uppercase;
+  border-bottom:1px solid var(--border);
+  text-align:right;position:sticky;top:0;z-index:2;
+}
+thead th:first-child{text-align:center}
+tbody tr{border-bottom:1px solid rgba(26,45,71,.5);transition:background .15s}
+tbody tr:hover{background:rgba(249,115,22,.04)}
+tbody tr.last-row{background:rgba(249,115,22,.07)}
+tbody td{padding:8px 12px;text-align:right;font-family:'Courier New',monospace}
+tbody td:first-child{text-align:center;font-family:'Segoe UI',sans-serif;color:var(--dim);font-weight:700}
+.pos{color:var(--green)}.neg{color:var(--red)}.zer{color:var(--yellow)}
+
+/* ══════════════════════════════════════════
+   CHECKING & FINAL ANSWER
+══════════════════════════════════════════ */
+.check-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:720px){.check-grid{grid-template-columns:1fr}}
+.check-box{
+  background:#060e1a;border:1px solid var(--border);
+  border-radius:10px;padding:18px;
+}
+.check-box h4{
+  font-size:.7rem;font-weight:700;letter-spacing:1.5px;
+  text-transform:uppercase;color:var(--dim);margin-bottom:12px;
+}
+.check-val{font-size:1.1rem;font-family:'Courier New',monospace;line-height:2}
+.final-answer-box{
+  background:linear-gradient(135deg,rgba(249,115,22,.1),rgba(234,88,12,.07));
+  border:2px solid var(--accent);border-radius:12px;
+  padding:22px 26px;text-align:center;
+}
+.final-answer-box .fa-label{
+  font-size:.72rem;font-weight:700;letter-spacing:2px;
+  text-transform:uppercase;color:var(--dim);margin-bottom:10px;
+}
+.final-answer-box .fa-val{
+  font-size:2rem;font-weight:900;color:var(--accent);
+  font-family:'Courier New',monospace;letter-spacing:-1px;
+}
+.final-answer-box .fa-eq{
+  font-size:.9rem;color:var(--dim);margin-top:8px;
+  font-family:'Courier New',monospace;
+}
+.final-answer-box .fa-iter{
+  display:inline-block;margin-top:12px;
+  background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.3);
+  border-radius:20px;padding:4px 14px;
+  font-size:.8rem;color:var(--accent);font-weight:700;
+}
+
+/* ══════════════════════════════════════════
+   LOADING
+══════════════════════════════════════════ */
+.loading{display:none;text-align:center;padding:32px;color:var(--dim)}
+.spin{
+  width:28px;height:28px;border:3px solid var(--border);
+  border-top-color:var(--accent);border-radius:50%;
+  animation:sp .7s linear infinite;margin:0 auto 10px;
+}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ HEADER ═══════════ -->
+<header>
+  <div class="header-top">
+    <div class="logo">Φ</div>
+    <div class="header-text">
+      <h1>False <span>Position</span> Method</h1>
+      <p>Quadratic Root Finder · Regula Falsi · Step-by-Step Solution</p>
+    </div>
+  </div>
+  <nav class="section-nav">
+    <button class="snav-btn active" onclick="scrollTo('s-intro')">Introduction</button>
+    <button class="snav-btn" onclick="scrollTo('s-formula')">Formula</button>
+    <button class="snav-btn" onclick="scrollTo('s-given')">Given</button>
+    <button class="snav-btn" onclick="scrollTo('s-solution')">Solution</button>
+    <button class="snav-btn" onclick="scrollTo('s-iteration')">Iteration</button>
+    <button class="snav-btn" onclick="scrollTo('s-graph')">Graph</button>
+    <button class="snav-btn" onclick="scrollTo('s-checking')">Checking</button>
+    <button class="snav-btn" onclick="scrollTo('s-final')">Final Answer</button>
+  </nav>
+</header>
+
+<main>
+
+<!-- ═══════════ 1. INTRODUCTION ═══════════ -->
+<section id="s-intro" class="card">
+  <div class="sec-label">Section 01</div>
+  <div class="sec-title">Introduction</div>
+  <div class="intro-grid">
+    <div class="intro-box">
+      <h4>What is the False Position Method?</h4>
+      <p>
+        The <strong>False Position Method</strong> (Regula Falsi) is a numerical root-finding
+        technique that combines the reliability of the Bisection Method with the speed of
+        linear interpolation. Instead of simply halving the interval, it draws a straight
+        line between the two endpoint values and uses the x-intercept of that line as
+        the next approximation.
+      </p>
+    </div>
+    <div class="intro-box">
+      <h4>Scope of This Solver</h4>
+      <ul>
+        <li>Equation type: <strong>Quadratic only</strong></li>
+        <li>Form: <strong>f(x) = ax² + bx + c = 0</strong></li>
+        <li>Requires a bracket [xL, xU] where f(xL)·f(xU) &lt; 0</li>
+        <li>Displays full iteration tabulation</li>
+        <li>Shows the function graph with root</li>
+        <li>Performs discriminant checking</li>
+        <li>Reports final root with verification</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 2. GENERAL FORMULA ═══════════ -->
+<section id="s-formula" class="card">
+  <div class="sec-label">Section 02</div>
+  <div class="sec-title">General Formula</div>
+  <div class="formula-wrap">
+    <div class="formula-block">
+      <h4>Quadratic Equation</h4>
+      <div class="formula-text">
+        f(x) = <span class="hl">a</span>x² + <span class="hl">b</span>x + <span class="hl">c</span> = 0
+      </div>
+      <p class="formula-note">Where a ≠ 0. The degree of the polynomial is 2 (quadratic). The highest exponent is x².</p>
+    </div>
+    <div class="formula-block">
+      <h4>False Position Formula</h4>
+      <div class="formula-text">
+        <span class="eq">xR</span> = xU − f(xU) · <span class="sub">(xL − xU)</span>
+        <br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;─────────────────
+        <br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sub">f(xL) − f(xU)</span>
+      </div>
+      <p class="formula-note">xL = lower bracket, xU = upper bracket, xR = new root estimate</p>
+    </div>
+    <div class="formula-block">
+      <h4>Approximate Relative Error</h4>
+      <div class="formula-text">
+        <span class="eq">εa</span> = |<span class="sub">(xR<sub>new</sub> − xR<sub>old</sub>)</span>| × 100%
+        <br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;──────────────────
+        <br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="sub">xR<sub>new</sub></span>
+      </div>
+      <p class="formula-note">Iteration stops when εa &lt; εs (specified tolerance)</p>
+    </div>
+    <div class="formula-block">
+      <h4>Discriminant (Δ) Check</h4>
+      <div class="formula-text">
+        Δ = <span class="hl">b</span>² − 4<span class="hl">a</span><span class="hl">c</span>
+      </div>
+      <p class="formula-note">
+        Δ &gt; 0 → Two distinct real roots<br/>
+        Δ = 0 → One repeated real root<br/>
+        Δ &lt; 0 → Complex roots (no real solution)
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 3. GIVEN (INPUT) ═══════════ -->
+<section id="s-given" class="card">
+  <div class="sec-label">Section 03</div>
+  <div class="sec-title">Given — Enter Your Equation</div>
+
+  <div class="input-grid">
+    <!-- LEFT: INPUTS -->
+    <div>
+      <!-- live preview -->
+      <div class="eq-preview" id="eqPrev">f(x) = ?</div>
+
+      <div style="font-size:.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:10px">
+        Quadratic Coefficients &nbsp;·&nbsp; f(x) = ax² + bx + c
+      </div>
+
+      <div class="frow">
+        <div>
+          <label>a &nbsp;<span style="color:var(--dim)">(x² coeff)</span></label>
+          <input type="number" id="ca" value="1" step="any" oninput="updatePreview()"/>
+        </div>
+        <div>
+          <label>b &nbsp;<span style="color:var(--dim)">(x coeff)</span></label>
+          <input type="number" id="cb" value="-3" step="any" oninput="updatePreview()"/>
+        </div>
+        <div>
+          <label>c &nbsp;<span style="color:var(--dim)">(constant)</span></label>
+          <input type="number" id="cc" value="2" step="any" oninput="updatePreview()"/>
+        </div>
+      </div>
+
+      <div style="font-size:.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:10px">
+        Initial Bracket
+      </div>
+      <div class="frow2">
+        <div>
+          <label>xL &nbsp;<span style="color:var(--dim)">(lower bound)</span></label>
+          <input type="number" id="xl" value="0" step="any"/>
+        </div>
+        <div>
+          <label>xU &nbsp;<span style="color:var(--dim)">(upper bound)</span></label>
+          <input type="number" id="xu" value="1.5" step="any"/>
+        </div>
+      </div>
+
+      <div class="f1">
+        <label>Stopping Tolerance  εs</label>
+        <select id="tol">
+          <option value="0.1">10⁻¹  = 0.1</option>
+          <option value="0.01">10⁻²  = 0.01</option>
+          <option value="0.001" selected>10⁻³  = 0.001</option>
+          <option value="0.0001">10⁻⁴  = 0.0001</option>
+          <option value="0.00001">10⁻⁵  = 0.00001</option>
+        </select>
+      </div>
+
+      <div class="err-box" id="errBox"></div>
+      <button class="btn-solve" id="solveBtn" onclick="solve()">▶ &nbsp; SOLVE — False Position Method</button>
+    </div>
+
+    <!-- RIGHT: GRAPH (shown before solve with placeholder) -->
+    <div>
+      <div style="font-size:.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin-bottom:12px">
+        Required: Root of the Quadratic Equation
+      </div>
+      <div style="background:#060e1a;border:1px solid var(--border);border-radius:10px;padding:16px 18px;font-size:.87rem;color:#94a3b8;line-height:1.8;margin-bottom:14px">
+        The program will find <strong style="color:var(--txt)">x</strong> such that <strong style="color:var(--accent)">ax² + bx + c = 0</strong><br/>
+        using the <strong style="color:var(--txt)">False Position (Regula Falsi)</strong> iterative method.<br/><br/>
+        It will show you:<br/>
+        &nbsp;• Number of iterations performed<br/>
+        &nbsp;• Full tabulation of every step<br/>
+        &nbsp;• Graph of f(x) with root marked<br/>
+        &nbsp;• Discriminant check (real or complex)<br/>
+        &nbsp;• Verified final answer
+      </div>
+      <div class="loading" id="ldg"><div class="spin"></div>Computing…</div>
+      <div id="s-graph-anchor"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ RESULTS (hidden until solve) ═══════════ -->
+<div id="results">
+
+<!-- ═══════════ 4. SOLUTION OVERVIEW ═══════════ -->
+<section id="s-solution" class="card">
+  <div class="sec-label">Section 04</div>
+  <div class="sec-title">Solution Overview</div>
+  <div class="badge-row">
+    <div class="badge og"><div class="bv" id="bRoot">—</div><div class="bl">Root  x ≈</div></div>
+    <div class="badge oc"><div class="bv" id="bIter">—</div><div class="bl">Iterations</div></div>
+    <div class="badge oy"><div class="bv" id="bErr">—</div><div class="bl">Final εa %</div></div>
+    <div class="badge ob"><div class="bv" id="bDisc">—</div><div class="bl">Disc. Type</div></div>
+    <div class="badge op"><div class="bv">2nd°</div><div class="bl">Equation Degree</div></div>
+  </div>
+
+  <!-- step-by-step -->
+  <div class="steps-grid" id="stepsGrid"></div>
+</section>
+
+<!-- ═══════════ 5. ITERATION TABLE ═══════════ -->
+<section id="s-iteration" class="card">
+  <div class="sec-label">Section 05</div>
+  <div class="sec-title">
+    Iteration Tabulation &nbsp;
+    <span id="iterLabel" style="color:var(--dim);font-weight:400;font-size:.85rem;text-transform:none;letter-spacing:0"></span>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>n</th>
+          <th>xL</th>
+          <th>xU</th>
+          <th>xR = xU − f(xU)·(xL−xU) / (f(xL)−f(xU))</th>
+          <th>f(xL)</th>
+          <th>f(xU)</th>
+          <th>f(xR)</th>
+          <th>εa %</th>
+        </tr>
+      </thead>
+      <tbody id="tBody"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════ 6. GRAPH ═══════════ -->
+<section id="s-graph" class="card">
+  <div class="sec-label">Section 06</div>
+  <div class="sec-title">Graph of f(x) &nbsp;<span id="graphEq" style="color:var(--dim);font-weight:400;font-size:.88rem"></span></div>
+  <div class="chart-wrap"><canvas id="myChart"></canvas></div>
+</section>
+
+<!-- ═══════════ 7. CHECKING ═══════════ -->
+<section id="s-checking" class="card">
+  <div class="sec-label">Section 07</div>
+  <div class="sec-title">Checking — Discriminant &amp; Root Verification</div>
+  <div class="check-grid" id="checkGrid"></div>
+</section>
+
+<!-- ═══════════ 8. FINAL ANSWER ═══════════ -->
+<section id="s-final" class="card">
+  <div class="sec-label">Section 08</div>
+  <div class="sec-title">Final Answer</div>
+  <div class="final-answer-box" id="finalBox">
+    <div class="fa-label">Root of the Quadratic Equation</div>
+    <div class="fa-val" id="faVal">—</div>
+    <div class="fa-eq" id="faEq">—</div>
+    <div class="fa-iter" id="faIter">—</div>
+  </div>
+</section>
+
+</div><!-- end #results -->
+</main>
+
+<script>
+/* ═══════════════════════════════════════════
+   NAVIGATION SCROLL
+═══════════════════════════════════════════ */
+function scrollTo(id) {
+    document.getElementById(id).scrollIntoView({behavior:'smooth'});
+    document.querySelectorAll('.snav-btn').forEach(b => b.classList.remove('active'));
+}
+
+/* ═══════════════════════════════════════════
+   EQUATION PREVIEW
+═══════════════════════════════════════════ */
+function updatePreview() {
+    const a = parseFloat(document.getElementById('ca').value) || 0;
+    const b = parseFloat(document.getElementById('cb').value) || 0;
+    const c = parseFloat(document.getElementById('cc').value) || 0;
+
+    function term(coef, vr, first) {
+        if (coef === 0) return '';
+        const abs  = Math.abs(coef);
+        const sign = coef < 0 ? ' − ' : (first ? '' : ' + ');
+        const num  = (abs === 1 && vr) ? '' : (Number.isInteger(abs) ? abs : abs.toFixed(3));
+        return sign + num + vr;
+    }
+    let parts = [];
+    if (a) parts.push(term(a, 'x²', !parts.length));
+    if (b) parts.push(term(b, 'x',  !parts.length));
+    if (c) parts.push(term(c, '',   !parts.length));
+    document.getElementById('eqPrev').textContent =
+        'f(x) = ' + (parts.length ? parts.join('') + ' = 0' : '0');
+}
+updatePreview();
+
+/* ═══════════════════════════════════════════
+   SIGN CLASS FOR TABLE
+═══════════════════════════════════════════ */
+function sc(v){ return Math.abs(v)<1e-10?'zer':v>0?'pos':'neg'; }
+function f8(v){ return v.toFixed(8); }
+function f6(v){ return v.toFixed(6); }
+
+/* ═══════════════════════════════════════════
+   CHART
+═══════════════════════════════════════════ */
+let chart = null;
+function renderChart(gdata, root, eqStr) {
+    const ctx = document.getElementById('myChart').getContext('2d');
+    if (chart) chart.destroy();
+
+    document.getElementById('graphEq').textContent = eqStr;
+
+    chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            datasets: [
+                {
+                    label: 'f(x)',
+                    data: gdata.map(p=>({x:p.x,y:p.y})),
+                    borderColor:'#f97316',backgroundColor:'rgba(249,115,22,0.08)',
+                    borderWidth:2.5,pointRadius:0,tension:0.35,fill:true
+                },
+                {
+                    label: 'Root x ≈ ' + root.toFixed(6),
+                    data:[{x:root,y:0}],
+                    borderColor:'#22c55e',backgroundColor:'#22c55e',
+                    pointRadius:10,pointStyle:'circle',showLine:false
+                },
+                {
+                    label: 'y = 0',
+                    data: gdata.map(p=>({x:p.x,y:0})),
+                    borderColor:'rgba(100,116,139,0.25)',borderWidth:1,
+                    borderDash:[5,5],pointRadius:0,fill:false
+                }
+            ]
+        },
+        options:{
+            responsive:true,maintainAspectRatio:false,
+            interaction:{mode:'index',intersect:false},
+            plugins:{
+                legend:{labels:{color:'#94a3b8',font:{size:12},boxWidth:14}},
+                tooltip:{
+                    backgroundColor:'#0e1622',borderColor:'#1a2d47',borderWidth:1,
+                    titleColor:'#f97316',bodyColor:'#e2e8f0'
+                }
+            },
+            scales:{
+                x:{type:'linear',grid:{color:'rgba(26,45,71,.5)'},
+                   ticks:{color:'#64748b',maxTicksLimit:10,callback:v=>Number(v).toFixed(2)}},
+                y:{grid:{color:'rgba(26,45,71,.5)'},ticks:{color:'#64748b'}}
+            }
+        }
+    });
+}
+
+/* ═══════════════════════════════════════════
+   BUILD STEP CARDS
+═══════════════════════════════════════════ */
+function buildSteps(data, ca, cb, cc, xl, xu, tol) {
+    const r0   = data.table[0];
+    const rLast= data.table[data.table.length-1];
+    const disc = cb*cb - 4*ca*cc;
+
+    const steps = [
+        {
+            num:'STEP 1', title:'Identify Equation Type',
+            body:`Equation: <span class="hl">f(x) = ${ca}x² + ${cb}x + ${cc} = 0</span>\n`
+               + `Degree  : <span class="hl3">2nd degree — Quadratic</span>\n`
+               + `Exponent: highest power = <span class="hl">x²</span>\n`
+               + `\nCoefficients:\n`
+               + `  a = <span class="hl">${ca}</span>  (x² term)\n`
+               + `  b = <span class="hl">${cb}</span>  (x  term)\n`
+               + `  c = <span class="hl">${cc}</span>  (constant)`
+        },
+        {
+            num:'STEP 2', title:'Check Initial Bracket',
+            body:`Given bracket: [xL, xU] = [<span class="hl3">${xl}</span>, <span class="hl3">${xu}</span>]\n`
+               + `\nEvaluate:\n`
+               + `  f(xL) = f(${xl}) = <span class="${sc(r0.fxl)} hl">${f8(r0.fxl)}</span>\n`
+               + `  f(xU) = f(${xu}) = <span class="${sc(r0.fxu)} hl">${f8(r0.fxu)}</span>\n`
+               + `\nf(xL) × f(xU) = <span class="${sc(r0.fxl*r0.fxu)} hl">${(r0.fxl*r0.fxu).toFixed(6)}</span>\n`
+               + `              < 0 ✓ Root is bracketed`
+        },
+        {
+            num:'STEP 3', title:'Apply False Position Formula',
+            body:`<span class="hl4">False Position Formula:</span>\n`
+               + `xR = xU − f(xU)·(xL−xU) / (f(xL)−f(xU))\n\n`
+               + `Iteration 1:\n`
+               + `  xR = ${r0.xu.toFixed(6)} − (${f8(r0.fxu)})×(${r0.xl.toFixed(6)}−${r0.xu.toFixed(6)})\n`
+               + `       ─────────────────────────────────────────\n`
+               + `       (${f8(r0.fxl)}) − (${f8(r0.fxu)})\n`
+               + `\n  xR = <span class="hl">${f8(r0.xr)}</span>\n`
+               + `  f(xR) = <span class="${sc(r0.fxr)} hl">${f8(r0.fxr)}</span>`
+        },
+        {
+            num:'STEP 4', title:'Update Bracket Rule',
+            body:`Check: f(xL) × f(xR)\n`
+               + `     = ${f8(r0.fxl)} × ${f8(r0.fxr)}\n`
+               + `     = <span class="${sc(r0.fxl*r0.fxr)} hl">${(r0.fxl*r0.fxr).toFixed(8)}</span>\n\n`
+               + (r0.fxl*r0.fxr < 0
+                   ? `< 0 → Root stays in [xL, xR]\n<span class="hl2">New upper: xU ← xR = ${f8(r0.xr)}</span>`
+                   : `> 0 → Root moves to [xR, xU]\n<span class="hl2">New lower: xL ← xR = ${f8(r0.xr)}</span>`)
+        },
+        {
+            num:'STEP 5', title:'Discriminant Check',
+            body:`Δ = b² − 4ac\n`
+               + `  = (${cb})² − 4×(${ca})×(${cc})\n`
+               + `  = ${(cb*cb).toFixed(4)} − ${(4*ca*cc).toFixed(4)}\n`
+               + `  = <span class="${disc>0?'hl2':disc<0?'neg hl':'hl4'}">${disc.toFixed(6)}</span>\n\n`
+               + `Result: <span class="hl">${data.disc}</span>`
+        },
+        {
+            num:'FINAL', title:'Convergence & Answer',
+            body:`Tolerance: εs = <span class="hl3">${tol}</span>%\n`
+               + `Stopping condition: εa < εs\n\n`
+               + `Total iterations: <span class="hl">${data.iterations}</span>\n`
+               + `Final xR = <span class="hl2">${data.root.toFixed(10)}</span>\n`
+               + `Final εa = <span class="hl4">${data.last_ea.toFixed(6)} %</span>\n\n`
+               + `<span class="hl2">Root ≈ x = ${data.root.toFixed(8)}</span>`
+        }
+    ];
+
+    const grid = document.getElementById('stepsGrid');
+    grid.innerHTML = '';
+    steps.forEach(s => {
+        const d = document.createElement('div');
+        d.className = 'step-card';
+        d.innerHTML = `<div class="step-num">${s.num}</div>
+                       <h4>${s.title}</h4>
+                       <div class="step-body">${s.body}</div>`;
+        grid.appendChild(d);
+    });
+}
+
+/* ═══════════════════════════════════════════
+   BUILD TABLE
+═══════════════════════════════════════════ */
+function buildTable(rows) {
+    const tb = document.getElementById('tBody');
+    tb.innerHTML = '';
+    rows.forEach((r, i) => {
+        const tr = document.createElement('tr');
+        if (i === rows.length-1) tr.className = 'last-row';
+        tr.innerHTML = `
+            <td>${r.n}</td>
+            <td>${f8(r.xl)}</td>
+            <td>${f8(r.xu)}</td>
+            <td>${f8(r.xr)}</td>
+            <td class="${sc(r.fxl)}">${f8(r.fxl)}</td>
+            <td class="${sc(r.fxu)}">${f8(r.fxu)}</td>
+            <td class="${sc(r.fxr)}">${f8(r.fxr)}</td>
+            <td>${r.n===1?'—':f6(r.ea)+'%'}</td>`;
+        tb.appendChild(tr);
+    });
+    document.getElementById('iterLabel').textContent =
+        `${rows.length} iteration(s) performed`;
+}
+
+/* ═══════════════════════════════════════════
+   BUILD CHECKING SECTION
+═══════════════════════════════════════════ */
+function buildChecking(data, ca, cb, cc) {
+    const disc   = cb*cb - 4*ca*cc;
+    const froot  = ca*data.root*data.root + cb*data.root + cc;
+    const grid   = document.getElementById('checkGrid');
+
+    let rootsHtml = '';
+    if (data.dtype === 2) {
+        rootsHtml = `Exact root 1: <span class="hl2">${data.r1.toFixed(8)}</span>\n`
+                  + `Exact root 2: <span class="hl2">${data.r2.toFixed(8)}</span>\n`
+                  + `\nFalse Position found: <span class="hl">${data.root.toFixed(8)}</span>`;
+    } else if (data.dtype === 1) {
+        rootsHtml = `Repeated root: <span class="hl2">${data.r1.toFixed(8)}</span>`;
+    } else {
+        rootsHtml = `<span class="neg">No real roots (Δ &lt; 0)</span>`;
+    }
+
+    grid.innerHTML = `
+      <div class="check-box">
+        <h4>Discriminant Analysis</h4>
+        <div class="check-val" style="font-size:.85rem">
+Δ = b² − 4ac = <span class="hl ${disc>0?'hl2':disc<0?'neg':'hl4'}">${disc.toFixed(6)}</span>
+
+<span class="hl3">${data.disc}</span>
+
+Quadratic Formula Roots:
+${rootsHtml}
+        </div>
+      </div>
+      <div class="check-box">
+        <h4>Root Verification</h4>
+        <div class="check-val" style="font-size:.85rem">
+Substitute x = ${data.root.toFixed(6)} into f(x):
+
+f(${data.root.toFixed(6)})
+= ${ca}(${data.root.toFixed(6)})²
+  + ${cb}(${data.root.toFixed(6)})
+  + ${cc}
+
+= <span class="hl">${froot.toExponential(6)}</span>
+
+<span class="hl2">≈ 0  ✓  Root confirmed</span>
+        </div>
+      </div>`;
+}
+
+/* ═══════════════════════════════════════════
+   BUILD FINAL ANSWER
+═══════════════════════════════════════════ */
+function buildFinal(data, ca, cb, cc) {
+    document.getElementById('faVal').textContent  = 'x ≈ ' + data.root.toFixed(8);
+    document.getElementById('faEq').textContent   =
+        `f(${data.root.toFixed(6)}) = ${(ca*data.root**2+cb*data.root+cc).toExponential(4)} ≈ 0`;
+    document.getElementById('faIter').textContent =
+        `Converged in ${data.iterations} iteration(s)  ·  Final εa = ${data.last_ea.toFixed(4)}%`;
+}
+
+/* ═══════════════════════════════════════════
+   MAIN SOLVE
+═══════════════════════════════════════════ */
+async function solve() {
+    const ca  = parseFloat(document.getElementById('ca').value)  || 0;
+    const cb  = parseFloat(document.getElementById('cb').value)  || 0;
+    const cc  = parseFloat(document.getElementById('cc').value)  || 0;
+    const xl  = parseFloat(document.getElementById('xl').value);
+    const xu  = parseFloat(document.getElementById('xu').value);
+    const tol = parseFloat(document.getElementById('tol').value);
+
+    const errBox = document.getElementById('errBox');
+    errBox.style.display = 'none';
+
+    if (ca === 0) {
+        errBox.textContent = "Coefficient 'a' cannot be 0 — that would not be a quadratic equation.";
+        errBox.style.display = 'block'; return;
+    }
+    if (isNaN(xl)||isNaN(xu)) {
+        errBox.textContent = "Please enter valid xL and xU values.";
+        errBox.style.display = 'block'; return;
+    }
+
+    document.getElementById('solveBtn').disabled = true;
+    document.getElementById('ldg').style.display  = 'block';
+
+    const body = `ca=${ca}&cb=${cb}&cc=${cc}&xl=${xl}&xu=${xu}&tol=${tol}`;
+
+    try {
+        const res  = await fetch('/solve',{method:'POST',body,
+            headers:{'Content-Type':'application/x-www-form-urlencoded'}});
+        const data = await res.json();
+
+        if (!data.success) {
+            errBox.textContent = 'Error: ' + data.error;
+            errBox.style.display = 'block';
+        } else {
+            const eqStr = `f(x) = ${ca}x² ${cb>=0?'+ '+cb:'− '+Math.abs(cb)}x ${cc>=0?'+ '+cc:'− '+Math.abs(cc)}`;
+
+            /* badges */
+            document.getElementById('bRoot').textContent = data.root.toFixed(6);
+            document.getElementById('bIter').textContent = data.iterations;
+            const last = data.table[data.table.length-1];
+            document.getElementById('bErr').textContent  = data.iterations===1?'—':data.last_ea.toFixed(4)+'%';
+            document.getElementById('bDisc').textContent =
+                data.dtype===2?'2 Real':data.dtype===1?'Repeated':'Complex';
+
+            /* sections */
+            buildSteps(data, ca, cb, cc, xl, xu, tol*100);
+            buildTable(data.table);
+            renderChart(data.graph, data.root, eqStr);
+            buildChecking(data, ca, cb, cc);
+            buildFinal(data, ca, cb, cc);
+
+            document.getElementById('results').style.display = 'block';
+            setTimeout(()=>document.getElementById('s-solution').scrollIntoView({behavior:'smooth'}),100);
+        }
+    } catch(e) {
+        errBox.textContent = 'Connection error. Make sure the server is running: ./server';
+        errBox.style.display = 'block';
+    }
+
+    document.getElementById('ldg').style.display  = 'none';
+    document.getElementById('solveBtn').disabled  = false;
+}
+</script>
+</body>
+</html>

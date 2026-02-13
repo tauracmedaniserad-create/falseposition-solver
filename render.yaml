@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: falseposition-solver
+    env: native
+    buildCommand: make build
+    startCommand: make run
