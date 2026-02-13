@@ -287,7 +287,7 @@ static void handle_solve(int fd, const char *body) {
 
     static char jbody[131072];
 
-    if (ca == 0.0) {
+    if (favs(ca) < 1e-10) {
         snprintf(jbody, sizeof(jbody),
             "{\"success\":false,\"error\":"
             "\"Coefficient 'a' cannot be zero — that would not be a quadratic equation.\"}");
