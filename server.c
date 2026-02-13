@@ -18,7 +18,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
-
+#include <errno.h>
 /* ────────────────────────────────────────
    CONSTANTS
 ──────────────────────────────────────── */
@@ -242,7 +242,10 @@ static void build_json(double ca, double cb, double cc,
 ──────────────────────────────────────── */
 static long read_html(char **out) {
     FILE *f = fopen("index.html", "r");
-    if (!f) return -1;
+if (!f) {
+    fprintf(stderr, "==> ERROR: Cannot open index.html - %s\n", strerror(errno));
+    return -1;
+}
     fseek(f, 0, SEEK_END); long sz = ftell(f); rewind(f);
     *out = malloc(sz + 1);
     if (!*out) { fclose(f); return -1; }
@@ -313,6 +316,9 @@ static void handle_solve(int fd, const char *body) {
    MAIN
 ──────────────────────────────────────── */
 int main(void) {
+    char cwd[1024];
+    getcwd(cwd, sizeof(cwd));
+    fprintf(stderr, "==> DEBUG: Working directory is: %s\n", cwd);
     char *port_env = getenv("PORT");
     int PORT = port_env ? atoi(port_env) : 8080;
 fprintf(stderr, "==> DEBUG: PORT from env='%s', using PORT=%d\n", port_env ? port_env : "NULL", PORT);
@@ -339,6 +345,7 @@ fprintf(stderr, "==> DEBUG: Now listening for connections\n");
 
     while (1) {
         int cfd = accept(sfd, NULL, NULL);
+	fprintf(stderr, "==> DEBUG: Connection accepted, fd=%d\n", cfd);
         if (cfd < 0) continue;
         static char req[BUF_SIZE];
         int n = read(cfd, req, BUF_SIZE-1);
@@ -348,6 +355,7 @@ fprintf(stderr, "==> DEBUG: Now listening for connections\n");
         sscanf(req, "%7s %63s", method, path);
         if (strcmp(method,"GET")==0) {
             handle_get(cfd);
+	fprintf(stderr, "==> DEBUG: Calling request handler\n");
         } else if (strcmp(method,"POST")==0 && strncmp(path,"/solve",6)==0) {
             char *b = strstr(req,"\r\n\r\n");
             handle_solve(cfd, b ? b+4 : "");
