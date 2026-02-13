@@ -22,7 +22,7 @@
 /* ────────────────────────────────────────
    CONSTANTS
 ──────────────────────────────────────── */
-#define PORT         8080
+#define PORT (getenv("PORT") ? atoi(getenv("PORT")) : 8080)
 #define BACKLOG      10
 #define BUF_SIZE     8192
 #define MAX_ITER     200
