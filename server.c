@@ -276,7 +276,8 @@ static void handle_get(int fd) {
 ──────────────────────────────────────── */
 static void handle_solve(int fd, const char *body) {
     char tmp[128];
-    get_param(body, "a",  tmp, sizeof(tmp)); double ca  = atof(tmp);
+    double ca = 0.0, cb = 0.0, cc = 0.0;
+    get_param(body, "a",  tmp, sizeof(tmp)); ca  = atof(tmp);
     get_param(body, "b",  tmp, sizeof(tmp)); double cb  = atof(tmp);
     get_param(body, "c",  tmp, sizeof(tmp)); double cc  = atof(tmp);
     get_param(body, "xl",  tmp, sizeof(tmp)); double xl  = atof(tmp);
