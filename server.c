@@ -312,7 +312,7 @@ static void handle_solve(int fd, const char *body) {
 /* ────────────────────────────────────────
    MAIN
 ──────────────────────────────────────── */
-int main(void) {int main(void) {
+int main(void) {
     char *port_env = getenv("PORT");
     int PORT = port_env ? atoi(port_env) : 8080;
     int sfd = socket(AF_INET, SOCK_STREAM, 0);
